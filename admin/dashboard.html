@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>لوحة التحكم | المسؤول</title>
+    <link rel="stylesheet" href="../styles/main.css">
+    <style>
+        :root {
+            --primary: #1976D2;
+            --dark: #0D47A1;
+            --light: #E3F2FD;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            min-height: 100vh;
+        }
+        
+        .sidebar {
+            background: var(--dark);
+            color: white;
+            padding: 20px 0;
+        }
+        
+        .main-content {
+            padding: 20px;
+            background: #f5f5f5;
+        }
+    </style>
+</head>
+<body>
+    <script src="../scripts/auth.js"></script>
+    <script>
+        // التحقق من الصلاحيات
+        try {
+            Auth.checkAdminAccess();
+        } catch (error) {
+            alert(error.message);
+            window.location.href = '../login.html';
+        }
+    </script>
+
+    <div class="dashboard">
+        <!-- الشريط الجانبي -->
+        <div class="sidebar">
+            <h2 style="text-align: center; padding: 20px;">لوحة التحكم</h2>
+            <nav>
+                <ul style="list-style: none; padding: 0;">
+                    <li><a href="#" style="color: white; display: block; padding: 10px 20px;">الرئيسية</a></li>
+                    <li><a href="#" style="color: white; display: block; padding: 10px 20px;">الحسابات</a></li>
+                    <li><a href="#" style="color: white; display: block; padding: 10px 20px;">التحويلات</a></li>
+                    <li><button onclick="Auth.logout(); window.location.href='../login.html'" 
+                        style="background: none; border: none; color: white; padding: 10px 20px; width: 100%; text-align: right;">
+                        تسجيل الخروج
+                    </button></li>
+                </ul>
+            </nav>
+        </div>
+        
+        <!-- المحتوى الرئيسي -->
+        <div class="main-content">
+            <h1>مرحباً بك، <span id="adminName"></span></h1>
+            <p>آخر دخول: <span id="lastLogin"></span></p>
+            
+            <div class="stats">
+                <!-- إحصائيات هنا -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // عرض بيانات المسؤول
+        if (Auth.currentUser) {
+            document.getElementById('adminName').textContent = Auth.currentUser.fullName;
+            document.getElementById('lastLogin').textContent = 
+                Auth.currentUser.lastLogin ? new Date(Auth.currentUser.lastLogin).toLocaleString() : 'الآن';
+        }
+    </script>
+</body>
+</html>
