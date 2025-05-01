@@ -1,33 +1,42 @@
-// تهيئة البيانات إذا لم تكن موجودة
-if (!localStorage.getItem('bankData')) {
-    const initialData = {
-        users: [
-            {
-                id: 1,
-                username: "admin",
-                password: "admin123",
-                fullName: "مدير النظام",
-                balance: 0,
-                cards: [],
-                isAdmin: true
-            }
-        ],
-        transactions: []
-    };
-    localStorage.setItem('bankData', JSON.stringify(initialData));
-}
+// scripts/database.js
+const bankDB = {
+    users: [
+        {
+            id: 1,
+            username: "admin",
+            password: "admin123", // كلمة السر الافتراضية
+            fullName: "مدير النظام",
+            isAdmin: true, // تأكد من وجود هذه الخاصية
+            permissions: ["dashboard", "accounts", "transactions"]
+        },
+        {
+            id: 2,
+            username: "user1",
+            password: "user123",
+            fullName: "مستخدم عادي",
+            isAdmin: false
+        }
+    ],
 
-// دالة مساعدة للحصول على البيانات
-function getBankData() {
-    return JSON.parse(localStorage.getItem('bankData'));
-}
+    login: function(username, password) {
+        return this.users.find(user => 
+            user.username === username && 
+            user.password === password
+        );
+    },
 
-// دالة مساعدة لحفظ البيانات
-function saveBankData(data) {
-    localStorage.setItem('bankData', JSON.stringify(data));
-}
+    // دالة مساعدة للتحقق من وجود المسؤولين
+    hasAdminAccounts: function() {
+        return this.users.some(user => user.isAdmin);
+    }
+};
 
-// تصدير الدوال إذا لزم الأمر
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { getBankData, saveBankData };
+// التحقق من إنشاء حسابات المسؤولين تلقائيًا إذا لم تكن موجودة
+if (!bankDB.hasAdminAccounts()) {
+    bankDB.users.push({
+        id: 99,
+        username: "superadmin",
+        password: "superadmin123",
+        isAdmin: true
+    });
 }
