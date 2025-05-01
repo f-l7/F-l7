@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>تحويل الأموال | بنك ديسكور</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <style>
+        .transfer-summary {
+            background: var(--dark-blue);
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            border: 1px solid var(--light-blue);
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <h1>تحويل الأموال</h1>
+        </div>
+    </header>
+
+    <nav class="nav">
+        <div class="container">
+            <a href="account.html" class="btn btn-back">رجوع</a>
+        </div>
+    </nav>
+
+    <main class="container">
+        <div class="card">
+            <form id="transferForm">
+                <div class="form-group">
+                    <label for="receiver">رقم البطاقة المحول إليها</label>
+                    <input type="text" id="receiver" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="amount">المبلغ (ر.س)</label>
+                    <input type="number" id="amount" min="0.01" step="0.01" required>
+                </div>
+                
+                <div class="transfer-summary">
+                    <p>رسوم التحويل (2%): <span id="fee">0.00</span> ر.س</p>
+                    <p>المبلغ الإجمالي: <span id="total">0.00</span> ر.س</p>
+                </div>
+                
+                <button type="submit" class="btn">تحويل الآن</button>
+            </form>
+            
+            <div id="transferResult"></div>
+        </div>
+    </main>
+
+    <script src="scripts/database.js"></script>
+    <script src="scripts/auth.js"></script>
+    <script>
+        const user = checkAuth();
+        
+        // حساب الرسوم
+        document.getElementById('amount').addEventListener('input', function() {
+            const amount = parseFloat(this.value) || 0;
+            const fee = amount * 0.02;
+            document.getElementById('fee').textContent = fee.toFixed(2);
+            document.getElementById('total').textContent = (amount + fee).toFixed(2);
+        });
+        
+        // إجراء التحويل
+        document.getElementById('transferForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const receiverCard = document.getElementById('receiver').value;
+            const amount = parseFloat(document.getElementById('amount').value);
+            const fee = amount * 0.02;
+            const total = amount + fee;
+            
+            if (!receiverCard || !amount) {
+                showResult('الرجاء إدخال جميع البيانات', 'error');
+                return;
+            }
+            
+            if (amount <= 0) {
+                showResult('المبلغ يجب أن يكون أكبر من الصفر', 'error');
+                return;
+            }
+            
+            // البحث عن المستقبل
+            const receiver = bankDB.getData().users.find(u => 
+                u.cards.some(c => c.number === receiverCard)
+            );
+            
+            if (!receiver) {
+                showResult('رقم البطاقة غير صحيح', 'error');
+                return;
+            }
+            
+            if (user.balance < total) {
+                showResult('رصيدك غير كافي لإتمام التحويل', 'error');
+                return;
+            }
+            
+            if (confirm(`هل تريد تحويل ${amount.toFixed(2)} ر.س إلى ${receiver.fullName}؟ (بما في ذلك رسوم 2%: ${fee.toFixed(2)} ر.س)`)) {
+                const transaction = bankDB.transfer(user.id, receiver.id, amount);
+                
+                if (transaction) {
+                    showResult(`
+                        تم التحويل بنجاح!<br>
+                        المبلغ المحول: ${amount.toFixed(2)} ر.س<br>
+                        رسوم التحويل: ${fee.toFixed(2)} ر.س<br>
+                        الرصيد الجديد: ${(user.balance - total).toFixed(2)} ر.س
+                    `, 'success');
+                    
+                    // تحديث بيانات المستخدم
+                    user.balance -= total;
+                    localStorage.setItem('currentUser', JSON.stringify(user));
+                    
+                    setTimeout(() => {
+                        window.location.href = 'account.html';
+                    }, 3000);
+                } else {
+                    showResult('حدث خطأ أثناء التحويل', 'error');
+                }
+            }
+        });
+        
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('transferResult');
+            resultDiv.innerHTML = `
+                <div class="alert alert-${type}">${message}</div>
+            `;
+        }
+    </script>
+</body>
+</html>
