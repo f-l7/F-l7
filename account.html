@@ -4,6 +4,17 @@
     <meta charset="UTF-8">
     <title>حسابي | بنك ديسكور</title>
     <link rel="stylesheet" href="styles/main.css">
+    <style>
+        .balance-display {
+            font-size: 2rem;
+            color: #0077b6;
+            margin: 1rem 0;
+            padding: 1rem;
+            background: #002244;
+            border-radius: 8px;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
     <header class="header">
@@ -24,40 +35,46 @@
     <main class="container">
         <div class="card">
             <h2>الرصيد الحالي</h2>
-            <p id="currentBalance" style="font-size: 2rem;">0 ر.س</p>
+            <div class="balance-display" id="currentBalance">0 ر.س</div>
             
             <h3>آخر الحركات</h3>
             <div id="transactions"></div>
         </div>
-        <a href="index.html" class="btn btn-back">العودة للرئيسية</a>
+        <a href="index.html" class="btn btn-back" onclick="logout()">العودة للرئيسية</a>
     </main>
 
     <script src="scripts/database.js"></script>
-    <script src="scripts/auth.js"></script>
     <script>
-        const user = checkAuth();
-        document.getElementById('currentBalance').textContent = user.balance.toFixed(2) + ' ر.س';
-        
-        // عرض الحركات
-        const transactions = bankDB.getData().transactions
-            .filter(t => t.senderId === user.id || t.receiverId === user.id)
-            .slice(0, 5);
-        
-        const transactionsEl = document.getElementById('transactions');
-        if (transactions.length > 0) {
-            transactions.forEach(t => {
-                const type = t.senderId === user.id ? 'تحويل' : 'إيداع';
-                const amount = t.senderId === user.id ? -t.amount : t.amount;
+        // عرض بيانات المستخدم
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        document.getElementById('currentBalance').textContent = currentUser.balance.toFixed(2) + ' ر.س';
+
+        // عرض الحركات (مثال)
+        const transactions = JSON.parse(localStorage.getItem('bankData')).transactions || [];
+        const userTransactions = transactions.filter(t => 
+            t.senderId === currentUser.id || t.receiverId === currentUser.id
+        ).slice(0, 5);
+
+        const transactionsContainer = document.getElementById('transactions');
+        if (userTransactions.length > 0) {
+            userTransactions.forEach(t => {
                 const transactionEl = document.createElement('div');
-                transactionEl.className = 'alert ' + (type === 'تحويل' ? 'alert-error' : 'alert-success');
+                transactionEl.className = 'alert ' + (t.senderId === currentUser.id ? 'alert-error' : 'alert-success');
                 transactionEl.innerHTML = `
-                    ${type}: ${Math.abs(amount).toFixed(2)} ر.س
+                    ${t.senderId === currentUser.id ? 'تحويل' : 'إيداع'}: 
+                    ${t.amount.toFixed(2)} ر.س
                     <small>${new Date(t.date).toLocaleString()}</small>
                 `;
-                transactionsEl.appendChild(transactionEl);
+                transactionsContainer.appendChild(transactionEl);
             });
         } else {
-            transactionsEl.innerHTML = '<p>لا توجد حركات حتى الآن</p>';
+            transactionsContainer.innerHTML = '<p>لا توجد حركات حتى الآن</p>';
+        }
+
+        // تسجيل الخروج
+        function logout() {
+            localStorage.removeItem('currentUser');
+            window.location.href = 'index.html';
         }
     </script>
 </body>
