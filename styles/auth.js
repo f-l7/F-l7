@@ -1,21 +1,30 @@
-// التحقق من تسجيل الدخول
-function checkAuth() {
-    const user = JSON.parse(localStorage.getItem('currentUser'));
-    if (!user) {
-        window.location.href = 'index.html';
-        return null;
+// scripts/auth.js
+class Auth {
+    static login(username, password, isAdminPage = false) {
+        const user = bankDB.login(username, password);
+        
+        if (!user) {
+            throw new Error("بيانات الدخول غير صحيحة");
+        }
+
+        if (isAdminPage && !user.isAdmin) {
+            throw new Error("لا تملك صلاحيات الدخول كمسؤول");
+        }
+
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        return user;
     }
-    return user;
-}
 
-// تسجيل الخروج
-function logout() {
-    localStorage.removeItem('currentUser');
-    window.location.href = 'index.html';
-    return true;
-}
+    static logout() {
+        localStorage.removeItem('currentUser');
+    }
 
-// تصدير الدوال إذا لزم الأمر
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { checkAuth, logout };
+    static isAuthenticated() {
+        return localStorage.getItem('currentUser') !== null;
+    }
+
+    static isAdmin() {
+        const user = JSON.parse(localStorage.getItem('currentUser'));
+        return user ? user.isAdmin : false;
+    }
 }
