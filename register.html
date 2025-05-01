@@ -9,7 +9,6 @@
     <header class="header">
         <div class="container">
             <h1>إنشاء حساب جديد</h1>
-            <p>الرصيد الابتدائي: 0 ر.س</p>
         </div>
     </header>
 
@@ -40,23 +39,60 @@
         document.getElementById('registerForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
-            const userData = {
-                username: document.getElementById('username').value,
-                password: document.getElementById('password').value,
-                fullName: document.getElementById('fullName').value
-            };
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const fullName = document.getElementById('fullName').value;
             
-            const newUser = bankDB.register(userData);
+            if (!username || !password || !fullName) {
+                document.getElementById('registerResult').innerHTML = `
+                    <div class="alert error">الرجاء تعبئة جميع الحقول</div>
+                `;
+                return;
+            }
+
+            // إنشاء كائن المستخدم الجديد
+            const newUser = {
+                username,
+                password,
+                fullName,
+                balance: 0,
+                cards: [],
+                isAdmin: false,
+                id: Date.now()
+            };
+
+            // الحصول على البيانات الحالية
+            const currentData = JSON.parse(localStorage.getItem('bankData')) || {
+                users: [],
+                transactions: []
+            };
+
+            // التحقق من عدم وجود مستخدم بنفس الاسم
+            if (currentData.users.some(user => user.username === username)) {
+                document.getElementById('registerResult').innerHTML = `
+                    <div class="alert error">اسم المستخدم موجود مسبقاً</div>
+                `;
+                return;
+            }
+
+            // إضافة المستخدم الجديد
+            currentData.users.push(newUser);
+            localStorage.setItem('bankData', JSON.stringify(currentData));
+            
+            // تسجيل الدخول تلقائياً
+            localStorage.setItem('currentUser', JSON.stringify(newUser));
             
             document.getElementById('registerResult').innerHTML = `
-                <div class="alert alert-success">
+                <div class="alert success">
                     تم إنشاء الحساب بنجاح!<br>
-                    اسم المستخدم: ${newUser.username}<br>
-                    الرصيد الحالي: 0 ر.س
+                    جاري توجيهك إلى صفحة الحساب...
                 </div>
             `;
             
-            document.getElementById('registerForm').reset();
+            // التوجيه بعد 3 ثواني
+            setTimeout(() => {
+                window.location.href = 'account.html';
+            }, 3000);
         });
     </script>
 </body>
