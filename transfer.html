@@ -6,11 +6,11 @@
     <link rel="stylesheet" href="styles/main.css">
     <style>
         .transfer-summary {
-            background: var(--dark-blue);
+            background: #002244;
             padding: 1rem;
             border-radius: 8px;
             margin: 1rem 0;
-            border: 1px solid var(--light-blue);
+            border: 1px solid #0077b6;
         }
     </style>
 </head>
@@ -31,13 +31,12 @@
         <div class="card">
             <form id="transferForm">
                 <div class="form-group">
-                    <label for="receiver">رقم البطاقة المحول إليها</label>
-                    <input type="text" id="receiver" required>
+                    <label for="receiverCard">رقم بطاقة المستقبل</label>
+                    <input type="text" id="receiverCard" required>
                 </div>
-                
                 <div class="form-group">
                     <label for="amount">المبلغ (ر.س)</label>
-                    <input type="number" id="amount" min="0.01" step="0.01" required>
+                    <input type="number" id="amount" min="1" required>
                 </div>
                 
                 <div class="transfer-summary">
@@ -55,80 +54,102 @@
     <script src="scripts/database.js"></script>
     <script src="scripts/auth.js"></script>
     <script>
-        const user = checkAuth();
-        
-        // حساب الرسوم
+        // حساب الرسوم عند تغيير المبلغ
         document.getElementById('amount').addEventListener('input', function() {
             const amount = parseFloat(this.value) || 0;
             const fee = amount * 0.02;
             document.getElementById('fee').textContent = fee.toFixed(2);
             document.getElementById('total').textContent = (amount + fee).toFixed(2);
         });
-        
+
         // إجراء التحويل
         document.getElementById('transferForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
-            const receiverCard = document.getElementById('receiver').value;
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            const receiverCard = document.getElementById('receiverCard').value;
             const amount = parseFloat(document.getElementById('amount').value);
             const fee = amount * 0.02;
             const total = amount + fee;
             
             if (!receiverCard || !amount) {
-                showResult('الرجاء إدخال جميع البيانات', 'error');
+                document.getElementById('transferResult').innerHTML = `
+                    <div class="alert error">الرجاء إدخال جميع البيانات</div>
+                `;
                 return;
             }
             
             if (amount <= 0) {
-                showResult('المبلغ يجب أن يكون أكبر من الصفر', 'error');
+                document.getElementById('transferResult').innerHTML = `
+                    <div class="alert error">المبلغ يجب أن يكون أكبر من الصفر</div>
+                `;
                 return;
             }
             
+            // الحصول على البيانات
+            const bankData = JSON.parse(localStorage.getItem('bankData'));
+            
             // البحث عن المستقبل
-            const receiver = bankDB.getData().users.find(u => 
-                u.cards.some(c => c.number === receiverCard)
+            const receiver = bankData.users.find(user => 
+                user.cards.some(card => card.number === receiverCard)
             );
             
             if (!receiver) {
-                showResult('رقم البطاقة غير صحيح', 'error');
+                document.getElementById('transferResult').innerHTML = `
+                    <div class="alert error">رقم البطاقة غير صحيح</div>
+                `;
                 return;
             }
             
-            if (user.balance < total) {
-                showResult('رصيدك غير كافي لإتمام التحويل', 'error');
+            if (currentUser.balance < total) {
+                document.getElementById('transferResult').innerHTML = `
+                    <div class="alert error">رصيدك غير كافي لإتمام التحويل</div>
+                `;
                 return;
             }
             
-            if (confirm(`هل تريد تحويل ${amount.toFixed(2)} ر.س إلى ${receiver.fullName}؟ (بما في ذلك رسوم 2%: ${fee.toFixed(2)} ر.س)`)) {
-                const transaction = bankDB.transfer(user.id, receiver.id, amount);
+            if (confirm(`هل تريد تحويل ${amount.toFixed(2)} ر.س إلى ${receiver.fullName}؟ (بما في ذلك رسوم التحويل)`)) {
+                // تنفيذ التحويل
+                const sender = bankData.users.find(u => u.id === currentUser.id);
+                const admin = bankData.users.find(u => u.isAdmin);
                 
-                if (transaction) {
-                    showResult(`
+                sender.balance -= total;
+                receiver.balance += amount;
+                admin.balance += fee;
+                
+                // تسجيل العملية
+                const transaction = {
+                    id: Date.now(),
+                    senderId: currentUser.id,
+                    receiverId: receiver.id,
+                    amount: amount,
+                    fee: fee,
+                    date: new Date().toISOString()
+                };
+                
+                bankData.transactions.push(transaction);
+                
+                // حفظ البيانات
+                localStorage.setItem('bankData', JSON.stringify(bankData));
+                localStorage.setItem('currentUser', JSON.stringify(sender));
+                
+                document.getElementById('transferResult').innerHTML = `
+                    <div class="alert success">
                         تم التحويل بنجاح!<br>
                         المبلغ المحول: ${amount.toFixed(2)} ر.س<br>
                         رسوم التحويل: ${fee.toFixed(2)} ر.س<br>
-                        الرصيد الجديد: ${(user.balance - total).toFixed(2)} ر.س
-                    `, 'success');
-                    
-                    // تحديث بيانات المستخدم
-                    user.balance -= total;
-                    localStorage.setItem('currentUser', JSON.stringify(user));
-                    
-                    setTimeout(() => {
-                        window.location.href = 'account.html';
-                    }, 3000);
-                } else {
-                    showResult('حدث خطأ أثناء التحويل', 'error');
-                }
+                        الرصيد الجديد: ${sender.balance.toFixed(2)} ر.س
+                    </div>
+                `;
+                
+                // إعادة تعبئة النموذج
+                document.getElementById('transferForm').reset();
+                
+                // تحديث عرض الرسوم
+                document.getElementById('fee').textContent = '0.00';
+                document.getElementById('total').textContent = '0.00';
             }
         });
-        
-        function showResult(message, type) {
-            const resultDiv = document.getElementById('transferResult');
-            resultDiv.innerHTML = `
-                <div class="alert alert-${type}">${message}</div>
-            `;
-        }
     </script>
 </body>
 </html>
