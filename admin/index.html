@@ -2,77 +2,74 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>لوحة التحكم | بنك ديسكور</title>
-    <link rel="stylesheet" href="../styles/main.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل الدخول | لوحة المسؤولين</title>
     <style>
-        .admin-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-            margin: 2rem 0;
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
         }
-        
-        .stat-card {
-            background: var(--dark-blue);
-            padding: 1.5rem;
+        .login-container {
+            width: 400px;
+            margin: 100px auto;
+            padding: 20px;
+            background: white;
             border-radius: 8px;
-            text-align: center;
-            border: 1px solid var(--light-blue);
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .alert {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .alert-error {
+            background: #ffebee;
+            color: #c62828;
         }
     </style>
 </head>
 <body>
-    <header class="header">
-        <div class="container">
-            <h1>لوحة تحكم المسؤول</h1>
-        </div>
-    </header>
-
-    <nav class="nav">
-        <div class="container">
-            <a href="add-funds.html" class="btn">إضافة رصيد</a>
-            <a href="reset-balance.html" class="btn">تصفير أرصدة</a>
-            <a href="delete-account.html" class="btn btn-admin">حذف حسابات</a>
-            <a href="../account.html" class="btn btn-back">حسابي</a>
-        </div>
-    </nav>
-
-    <main class="container">
-        <div class="card">
-            <h2>إحصائيات النظام</h2>
-            
-            <div class="admin-stats">
-                <div class="stat-card">
-                    <h3>عدد المستخدمين</h3>
-                    <p id="usersCount">0</p>
-                </div>
-                <div class="stat-card">
-                    <h3>إجمالي الأرصدة</h3>
-                    <p id="totalBalance">0 ر.س</p>
-                </div>
-                <div class="stat-card">
-                    <h3>عدد البطاقات</h3>
-                    <p id="totalCards">0</p>
-                </div>
+    <div class="login-container">
+        <h2>تسجيل دخول المسؤولين</h2>
+        <form id="adminLoginForm">
+            <div>
+                <label>اسم المستخدم:</label>
+                <input type="text" id="adminUsername" required>
             </div>
-        </div>
-    </main>
+            <div>
+                <label>كلمة المرور:</label>
+                <input type="password" id="adminPassword" required>
+            </div>
+            <button type="submit">دخول</button>
+        </form>
+        <div id="adminLoginResult"></div>
+    </div>
 
-    <script src="../scripts/database.js"></script>
-    <script src="../scripts/auth.js"></script>
+    <script src="scripts/database.js"></script>
+    <script src="scripts/auth.js"></script>
     <script>
-        checkAdmin();
-        
-        const data = bankDB.getData();
-        
-        // عرض الإحصائيات
-        document.getElementById('usersCount').textContent = data.users.length - 1; // نستثني المسؤول
-        
-        const totalBalance = data.users.reduce((sum, user) => sum + user.balance, 0);
-        document.getElementById('totalBalance').textContent = totalBalance.toFixed(2) + ' ر.س';
-        
-        const totalCards = data.users.reduce((sum, user) => sum + user.cards.length, 0);
-        document.getElementById('totalCards').textContent = totalCards;
+        document.getElementById('adminLoginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('adminUsername').value;
+            const password = document.getElementById('adminPassword').value;
+            
+            try {
+                Auth.login(username, password, true);
+                window.location.href = 'admin/dashboard.html';
+            } catch (error) {
+                document.getElementById('adminLoginResult').innerHTML = `
+                    <div class="alert alert-error">
+                        ${error.message}
+                    </div>
+                `;
+            }
+        });
+
+        // التحقق التلقائي من وجود مسؤولين
+        if (!bankDB.hasAdminAccounts()) {
+            console.warn("لا يوجد حسابات مسؤولين في النظام!");
+        }
     </script>
 </body>
 </html>
