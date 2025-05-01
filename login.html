@@ -30,8 +30,6 @@
         <a href="index.html" class="btn btn-back">العودة للرئيسية</a>
     </main>
 
-    <script src="scripts/database.js"></script>
-    <script src="scripts/auth.js"></script>
     <script>
         document.getElementById('loginForm').addEventListener('submit', function(e) {
             e.preventDefault();
@@ -40,14 +38,31 @@
             const password = document.getElementById('password').value;
             const isAdmin = new URLSearchParams(window.location.search).has('admin');
             
-            const user = bankDB.login(username, password);
+            // الحصول على البيانات
+            const bankData = JSON.parse(localStorage.getItem('bankData')) || { users: [] };
+            
+            // البحث عن المستخدم
+            const user = bankData.users.find(user => 
+                user.username === username && 
+                user.password === password
+            );
             
             if (user && (!isAdmin || user.isAdmin)) {
                 localStorage.setItem('currentUser', JSON.stringify(user));
-                window.location.href = isAdmin ? 'admin/index.html' : 'account.html';
+                
+                document.getElementById('loginResult').innerHTML = `
+                    <div class="alert success">
+                        تم تسجيل الدخول بنجاح!<br>
+                        جاري توجيهك...
+                    </div>
+                `;
+                
+                setTimeout(() => {
+                    window.location.href = isAdmin ? 'admin/index.html' : 'account.html';
+                }, 2000);
             } else {
                 document.getElementById('loginResult').innerHTML = `
-                    <div class="alert alert-error">
+                    <div class="alert error">
                         بيانات الدخول غير صحيحة أو لا تملك الصلاحيات المطلوبة
                     </div>
                 `;
