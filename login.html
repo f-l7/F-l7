@@ -2,50 +2,53 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>تسجيل الدخول | بنك ديسكور</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل الدخول | نظام البنك</title>
     <link rel="stylesheet" href="styles/main.css">
     <style>
+        .login-container {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 30px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
         .alert {
-            padding: 15px;
-            margin: 10px 0;
+            padding: 12px;
+            margin: 15px 0;
             border-radius: 4px;
         }
         .alert-error {
-            background-color: #ffebee;
+            background: #ffebee;
             color: #c62828;
             border: 1px solid #ef9a9a;
-        }
-        .alert-success {
-            background-color: #e8f5e9;
-            color: #2e7d32;
-            border: 1px solid #a5d6a7;
         }
     </style>
 </head>
 <body>
-    <header class="header">
-        <div class="container">
-            <h1>تسجيل الدخول</h1>
-        </div>
-    </header>
-
-    <main class="container">
-        <div class="card">
-            <form id="loginForm">
-                <div class="form-group">
-                    <label for="username">اسم المستخدم</label>
-                    <input type="text" id="username" required>
-                </div>
-                <div class="form-group">
-                    <label for="password">كلمة المرور</label>
-                    <input type="password" id="password" required>
-                </div>
-                <button type="submit" class="btn">تسجيل الدخول</button>
-            </form>
-            <div id="loginResult"></div>
-        </div>
-        <a href="index.html" class="btn btn-back">العودة للرئيسية</a>
-    </main>
+    <div class="login-container">
+        <h2 style="text-align: center;">تسجيل دخول المسؤولين</h2>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">اسم المستخدم:</label>
+                <input type="text" id="username" required class="form-control">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">كلمة المرور:</label>
+                <input type="password" id="password" required class="form-control">
+            </div>
+            
+            <button type="submit" class="btn-primary" style="width: 100%;">تسجيل الدخول</button>
+        </form>
+        
+        <div id="loginResult"></div>
+    </div>
 
     <script src="scripts/database.js"></script>
     <script src="scripts/auth.js"></script>
@@ -55,42 +58,28 @@
             
             const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
-            const isAdminPage = new URLSearchParams(window.location.search).has('admin');
+            const resultDiv = document.getElementById('loginResult');
             
             try {
-                // تأخير لمحاكاة اتصال بالخادم
-                await new Promise(resolve => setTimeout(resolve, 500));
+                await Auth.login(username, password);
                 
-                const user = bankDB.login(username, password);
-                
-                if (!user) {
-                    throw new Error('بيانات الدخول غير صحيحة');
-                }
-                
-                if (isAdminPage && !user.isAdmin) {
-                    throw new Error('لا تملك صلاحيات المسؤول');
-                }
-                
-                localStorage.setItem('currentUser', JSON.stringify(user));
-                localStorage.setItem('authToken', 'generated-token-here');
-                
-                document.getElementById('loginResult').innerHTML = `
-                    <div class="alert alert-success">
-                        جاري توجيهك إلى لوحة التحكم...
+                resultDiv.innerHTML = `
+                    <div class="alert" style="background: #e8f5e9; color: #2e7d32;">
+                        جاري تحويلك إلى لوحة التحكم...
                     </div>
                 `;
                 
                 setTimeout(() => {
-                    window.location.href = isAdminPage ? 'admin/index.html' : 'account.html';
+                    window.location.href = 'admin/dashboard.html';
                 }, 1500);
                 
             } catch (error) {
-                document.getElementById('loginResult').innerHTML = `
+                resultDiv.innerHTML = `
                     <div class="alert alert-error">
-                        ${error.message}
+                        ${error}
                     </div>
                 `;
-                console.error('Login error:', error);
+                console.error('Login Error:', error);
             }
         });
     </script>
