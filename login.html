@@ -4,6 +4,23 @@
     <meta charset="UTF-8">
     <title>تسجيل الدخول | بنك ديسكور</title>
     <link rel="stylesheet" href="styles/main.css">
+    <style>
+        .alert {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .alert-error {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 1px solid #ef9a9a;
+        }
+        .alert-success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #a5d6a7;
+        }
+    </style>
 </head>
 <body>
     <header class="header">
@@ -30,42 +47,50 @@
         <a href="index.html" class="btn btn-back">العودة للرئيسية</a>
     </main>
 
+    <script src="scripts/database.js"></script>
+    <script src="scripts/auth.js"></script>
     <script>
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            const username = document.getElementById('username').value;
+            const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
-            const isAdmin = new URLSearchParams(window.location.search).has('admin');
+            const isAdminPage = new URLSearchParams(window.location.search).has('admin');
             
-            // الحصول على البيانات
-            const bankData = JSON.parse(localStorage.getItem('bankData')) || { users: [] };
-            
-            // البحث عن المستخدم
-            const user = bankData.users.find(user => 
-                user.username === username && 
-                user.password === password
-            );
-            
-            if (user && (!isAdmin || user.isAdmin)) {
+            try {
+                // تأخير لمحاكاة اتصال بالخادم
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                const user = bankDB.login(username, password);
+                
+                if (!user) {
+                    throw new Error('بيانات الدخول غير صحيحة');
+                }
+                
+                if (isAdminPage && !user.isAdmin) {
+                    throw new Error('لا تملك صلاحيات المسؤول');
+                }
+                
                 localStorage.setItem('currentUser', JSON.stringify(user));
+                localStorage.setItem('authToken', 'generated-token-here');
                 
                 document.getElementById('loginResult').innerHTML = `
-                    <div class="alert success">
-                        تم تسجيل الدخول بنجاح!<br>
-                        جاري توجيهك...
+                    <div class="alert alert-success">
+                        جاري توجيهك إلى لوحة التحكم...
                     </div>
                 `;
                 
                 setTimeout(() => {
-                    window.location.href = isAdmin ? 'admin/index.html' : 'account.html';
-                }, 2000);
-            } else {
+                    window.location.href = isAdminPage ? 'admin/index.html' : 'account.html';
+                }, 1500);
+                
+            } catch (error) {
                 document.getElementById('loginResult').innerHTML = `
-                    <div class="alert error">
-                        بيانات الدخول غير صحيحة أو لا تملك الصلاحيات المطلوبة
+                    <div class="alert alert-error">
+                        ${error.message}
                     </div>
                 `;
+                console.error('Login error:', error);
             }
         });
     </script>
