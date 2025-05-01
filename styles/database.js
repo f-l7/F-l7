@@ -1,55 +1,35 @@
 // scripts/database.js
-const bankDB = {
-    // قاعدة بيانات المستخدمين
+const Database = {
     users: [
         {
             id: 1,
             username: "admin",
-            password: "admin123", // كلمة مرور افتراضية
+            password: "admin123", // كلمة سر افتراضية
             fullName: "مدير النظام",
-            isAdmin: true,
-            lastLogin: null
+            role: "admin",
+            lastLogin: null,
+            permissions: ["dashboard", "accounts", "transactions"]
         },
         {
             id: 2,
             username: "user1",
             password: "user123",
             fullName: "موظف عادي",
-            isAdmin: false
+            role: "user",
+            lastLogin: null
         }
     ],
 
-    // دالة تسجيل الدخول
-    login: function(username, password) {
-        const user = this.users.find(u => u.username === username);
-        
-        if (!user) {
-            console.error("المستخدم غير موجود");
-            return null;
-        }
-        
-        // في تطبيق حقيقي استخدم: password_verify()
-        if (user.password === password) {
-            user.lastLogin = new Date();
-            return user;
-        }
-        
-        return null;
+    findUser: function(username) {
+        return this.users.find(user => user.username === username);
     },
 
-    // دالة التحقق من وجود مسؤولين
-    hasAdmins: function() {
-        return this.users.some(user => user.isAdmin);
+    updateUser: function(username, newData) {
+        const userIndex = this.users.findIndex(u => u.username === username);
+        if (userIndex !== -1) {
+            this.users[userIndex] = { ...this.users[userIndex], ...newData };
+            return true;
+        }
+        return false;
     }
 };
-
-// إنشاء مسؤول افتراضي إذا لم يوجد
-if (!bankDB.hasAdmins()) {
-    bankDB.users.push({
-        id: 99,
-        username: "superadmin",
-        password: "superadmin123",
-        isAdmin: true
-    });
-    console.warn("تم إنشاء مسؤول افتراضي!");
-}
