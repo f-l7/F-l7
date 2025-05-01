@@ -1,35 +1,58 @@
 // scripts/auth.js
 class Auth {
-    static login(username, password, requireAdmin = false) {
-        const user = bankDB.login(username, password);
-        
-        if (!user) {
-            throw new Error("بيانات الدخول غير صحيحة");
+    static currentUser = null;
+
+    static init() {
+        const storedUser = localStorage.getItem('bankCurrentUser');
+        if (storedUser) {
+            this.currentUser = JSON.parse(storedUser);
         }
-
-        if (requireAdmin && !user.isAdmin) {
-            throw new Error("صلاحيات المسؤول مطلوبة");
-        }
-
-        this.setSession(user);
-        return user;
     }
 
-    static setSession(user) {
-        localStorage.setItem('currentUser', JSON.stringify(user));
-        localStorage.setItem('lastActivity', Date.now());
-    }
+    static login(username, password) {
+        return new Promise((resolve, reject) => {
+            setTimeout(() => {
+                const user = Database.findUser(username);
+                
+                if (!user) {
+                    reject('اسم المستخدم غير موجود');
+                    return;
+                }
 
-    static isAdmin() {
-        const user = this.getCurrentUser();
-        return user ? user.isAdmin : false;
-    }
+                if (user.password !== password) {
+                    reject('كلمة المرور غير صحيحة');
+                    return;
+                }
 
-    static getCurrentUser() {
-        return JSON.parse(localStorage.getItem('currentUser'));
+                // تحديث وقت آخر دخول
+                Database.updateUser(username, { lastLogin: new Date() });
+
+                this.currentUser = user;
+                localStorage.setItem('bankCurrentUser', JSON.stringify(user));
+                resolve(user);
+            }, 300);
+        });
     }
 
     static logout() {
-        localStorage.clear();
+        localStorage.removeItem('bankCurrentUser');
+        this.currentUser = null;
+    }
+
+    static isAuthenticated() {
+        return this.currentUser !== null;
+    }
+
+    static isAdmin() {
+        return this.isAuthenticated() && this.currentUser.role === 'admin';
+    }
+
+    static checkAdminAccess() {
+        if (!this.isAdmin()) {
+            throw new Error('الوصول مرفوض: صلاحيات مسؤول مطلوبة');
+        }
     }
 }
+
+// تهيئة النظام عند التحميل
+Auth.init();
