@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>حسابي | بنك ديسكور</title>
+    <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <h1>حسابي الشخصي</h1>
+        </div>
+    </header>
+
+    <nav class="nav">
+        <div class="container">
+            <a href="cards.html" class="btn">بطاقاتي</a>
+            <a href="transfer.html" class="btn">تحويل أموال</a>
+            <a href="create-card.html" class="btn">إنشاء بطاقة</a>
+            <a href="#" onclick="logout()" class="btn btn-admin">تسجيل الخروج</a>
+        </div>
+    </nav>
+
+    <main class="container">
+        <div class="card">
+            <h2>الرصيد الحالي</h2>
+            <p id="currentBalance" style="font-size: 2rem;">0 ر.س</p>
+            
+            <h3>آخر الحركات</h3>
+            <div id="transactions"></div>
+        </div>
+        <a href="index.html" class="btn btn-back">العودة للرئيسية</a>
+    </main>
+
+    <script src="scripts/database.js"></script>
+    <script src="scripts/auth.js"></script>
+    <script>
+        const user = checkAuth();
+        document.getElementById('currentBalance').textContent = user.balance.toFixed(2) + ' ر.س';
+        
+        // عرض الحركات
+        const transactions = bankDB.getData().transactions
+            .filter(t => t.senderId === user.id || t.receiverId === user.id)
+            .slice(0, 5);
+        
+        const transactionsEl = document.getElementById('transactions');
+        if (transactions.length > 0) {
+            transactions.forEach(t => {
+                const type = t.senderId === user.id ? 'تحويل' : 'إيداع';
+                const amount = t.senderId === user.id ? -t.amount : t.amount;
+                const transactionEl = document.createElement('div');
+                transactionEl.className = 'alert ' + (type === 'تحويل' ? 'alert-error' : 'alert-success');
+                transactionEl.innerHTML = `
+                    ${type}: ${Math.abs(amount).toFixed(2)} ر.س
+                    <small>${new Date(t.date).toLocaleString()}</small>
+                `;
+                transactionsEl.appendChild(transactionEl);
+            });
+        } else {
+            transactionsEl.innerHTML = '<p>لا توجد حركات حتى الآن</p>';
+        }
+    </script>
+</body>
+</html>
