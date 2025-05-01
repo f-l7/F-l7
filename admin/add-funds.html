@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>إضافة رصيد | بنك ديسكور</title>
+    <link rel="stylesheet" href="../styles/main.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <h1>إضافة رصيد</h1>
+        </div>
+    </header>
+
+    <nav class="nav">
+        <div class="container">
+            <a href="index.html" class="btn btn-back">رجوع</a>
+        </div>
+    </nav>
+
+    <main class="container">
+        <div class="card">
+            <form id="addFundsForm">
+                <div class="form-group">
+                    <label for="cardNumber">رقم البطاقة</label>
+                    <input type="text" id="cardNumber" required>
+                </div>
+                <div class="form-group">
+                    <label for="amount">المبلغ (ر.س)</label>
+                    <input type="number" id="amount" min="0.01" step="0.01" required>
+                </div>
+                <button type="submit" class="btn">إضافة الرصيد</button>
+            </form>
+            
+            <div id="addFundsResult"></div>
+        </div>
+    </main>
+
+    <script src="../scripts/database.js"></script>
+    <script src="../scripts/auth.js"></script>
+    <script>
+        checkAdmin();
+        
+        document.getElementById('addFundsForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const cardNumber = document.getElementById('cardNumber').value;
+            const amount = parseFloat(document.getElementById('amount').value);
+            
+            if (!cardNumber || !amount) {
+                showResult('الرجاء إدخال جميع البيانات', 'error');
+                return;
+            }
+            
+            if (amount <= 0) {
+                showResult('المبلغ يجب أن يكون أكبر من الصفر', 'error');
+                return;
+            }
+            
+            // البحث عن المستخدم
+            const user = bankDB.getData().users.find(u => 
+                u.cards.some(c => c.number === cardNumber)
+            );
+            
+            if (!user) {
+                showResult('رقم البطاقة غير صحيح', 'error');
+                return;
+            }
+            
+            if (confirm(`هل تريد إضافة ${amount.toFixed(2)} ر.س إلى حساب ${user.username}؟`)) {
+                const updatedUser = bankDB.addFunds(user.id, amount);
+                
+                if (updatedUser) {
+                    showResult(`
+                        تم إضافة الرصيد بنجاح!<br>
+                        المبلغ المضاف: ${amount.toFixed(2)} ر.س<br>
+                        الرصيد الجديد: ${updatedUser.balance.toFixed(2)} ر.س
+                    `, 'success');
+                } else {
+                    showResult('حدث خطأ أثناء إضافة الرصيد', 'error');
+                }
+            }
+        });
+        
+        function showResult(message, type) {
+            document.getElementById('addFundsResult').innerHTML = `
+                <div class="alert alert-${type}">${message}</div>
+            `;
+        }
+    </script>
+</body>
+</html>
