@@ -1,3 +1,4 @@
+// التحقق من تسجيل الدخول
 function checkAuth() {
     const user = JSON.parse(localStorage.getItem('currentUser'));
     if (!user) {
@@ -7,20 +8,14 @@ function checkAuth() {
     return user;
 }
 
-function checkAdmin() {
-    const user = checkAuth();
-    if (!user?.isAdmin) {
-        window.location.href = 'account.html';
-        return null;
-    }
-    return user;
-}
-
+// تسجيل الخروج
 function logout() {
     localStorage.removeItem('currentUser');
     window.location.href = 'index.html';
+    return true;
 }
 
+// تصدير الدوال إذا لزم الأمر
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { checkAuth, checkAdmin, logout };
+    module.exports = { checkAuth, logout };
 }
