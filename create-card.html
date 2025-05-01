@@ -6,11 +6,12 @@
     <link rel="stylesheet" href="styles/main.css">
     <style>
         .card-preview {
-            background: linear-gradient(135deg, #004080, #002244);
+            background: linear-gradient(135deg, #002244, #004080);
+            color: white;
             padding: 1.5rem;
-            border-radius: 10px;
-            margin: 2rem 0;
-            border: 1px solid #0077b6;
+            border-radius: 8px;
+            margin: 1rem 0;
+            font-family: monospace;
         }
     </style>
 </head>
@@ -44,36 +45,51 @@
     <script src="scripts/database.js"></script>
     <script src="scripts/auth.js"></script>
     <script>
-        const user = checkAuth();
-        
         document.getElementById('createCardForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
             const cardName = document.getElementById('cardName').value;
-            const newCard = bankDB.createCard(user.id, cardName);
-            
-            if (newCard) {
-                document.getElementById('cardResult').innerHTML = `
-                    <div class="card-preview">
-                        <h3>تم إنشاء البطاقة بنجاح!</h3>
-                        <p>اسم البطاقة: ${newCard.name}</p>
-                        <p>رقم البطاقة: ${newCard.number.match(/.{1,4}/g).join(' ')}</p>
-                        <p>انتهاء الصلاحية: ${newCard.expiry}</p>
-                        <p>CVV: ${newCard.cvv}</p>
-                        <p style="color: #ff6b6b; font-weight: bold">الرجاء حفظ هذه المعلومات في مكان آمن</p>
-                    </div>
-                `;
-                
-                setTimeout(() => {
-                    window.location.href = 'cards.html';
-                }, 5000);
-            } else {
-                document.getElementById('cardResult').innerHTML = `
-                    <div class="alert alert-error">
-                        حدث خطأ أثناء إنشاء البطاقة
-                    </div>
-                `;
+            if (!cardName) {
+                alert("الرجاء إدخال اسم البطاقة");
+                return;
             }
+            
+            // الحصول على البيانات الحالية
+            const bankData = JSON.parse(localStorage.getItem('bankData'));
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            const user = bankData.users.find(u => u.id === currentUser.id);
+            
+            // إنشاء بطاقة جديدة
+            const newCard = {
+                id: Date.now(),
+                name: cardName,
+                number: Array.from({length: 16}, () => Math.floor(Math.random() * 10)).join(''),
+                expiry: `${(new Date().getMonth() + 1).toString().padStart(2, '0')}/${(new Date().getFullYear() + 3).toString().slice(2)}`,
+                cvv: Math.floor(Math.random() * 900) + 100
+            };
+            
+            // إضافة البطاقة للمستخدم
+            user.cards.push(newCard);
+            
+            // حفظ البيانات
+            localStorage.setItem('bankData', JSON.stringify(bankData));
+            localStorage.setItem('currentUser', JSON.stringify(user));
+            
+            // عرض البطاقة المنشأة
+            document.getElementById('cardResult').innerHTML = `
+                <div class="card-preview">
+                    <h3>تم إنشاء البطاقة بنجاح!</h3>
+                    <p>اسم البطاقة: ${newCard.name}</p>
+                    <p>رقم البطاقة: ${newCard.number.match(/.{1,4}/g).join(' ')}</p>
+                    <p>انتهاء الصلاحية: ${newCard.expiry}</p>
+                    <p>CVV: ${newCard.cvv}</p>
+                    <p style="color: #ff6b6b; font-weight: bold">الرجاء حفظ هذه المعلومات في مكان آمن</p>
+                </div>
+                <a href="cards.html" class="btn">عرض البطاقات</a>
+            `;
+            
+            // مسح حقل الإدخال
+            document.getElementById('cardName').value = '';
         });
     </script>
 </body>
