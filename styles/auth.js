@@ -1,30 +1,35 @@
 // scripts/auth.js
 class Auth {
-    static login(username, password, isAdminPage = false) {
+    static login(username, password, requireAdmin = false) {
         const user = bankDB.login(username, password);
         
         if (!user) {
             throw new Error("بيانات الدخول غير صحيحة");
         }
 
-        if (isAdminPage && !user.isAdmin) {
-            throw new Error("لا تملك صلاحيات الدخول كمسؤول");
+        if (requireAdmin && !user.isAdmin) {
+            throw new Error("صلاحيات المسؤول مطلوبة");
         }
 
-        localStorage.setItem('currentUser', JSON.stringify(user));
+        this.setSession(user);
         return user;
     }
 
-    static logout() {
-        localStorage.removeItem('currentUser');
-    }
-
-    static isAuthenticated() {
-        return localStorage.getItem('currentUser') !== null;
+    static setSession(user) {
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        localStorage.setItem('lastActivity', Date.now());
     }
 
     static isAdmin() {
-        const user = JSON.parse(localStorage.getItem('currentUser'));
+        const user = this.getCurrentUser();
         return user ? user.isAdmin : false;
+    }
+
+    static getCurrentUser() {
+        return JSON.parse(localStorage.getItem('currentUser'));
+    }
+
+    static logout() {
+        localStorage.clear();
     }
 }
